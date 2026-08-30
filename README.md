@@ -24,20 +24,20 @@ show you.
 
 ## Requirements
 
-| Requirement | Why |
-|---|---|
-| Arch Linux (or an Arch derivative) | `pacman`/`libalpm` need to actually be installed |
-| `libalpm.so` | koffi loads it directly at runtime (`dlopen`) — no headers needed. `alpm.h` is only used by the optional `npm run check-alpm-coverage` maintenance script, not at runtime |
-| Node.js **>= 23.6** + npm | koffi ships a prebuilt binary per platform, so `npm install` needs no compiler. The CLI also runs `.ts` sources directly via Node's native type-stripping — no compile step anywhere |
+| Requirement                        | Why                                                                                                                                                                                   |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Arch Linux (or an Arch derivative) | `pacman`/`libalpm` need to actually be installed                                                                                                                                      |
+| `libalpm.so`                       | koffi loads it directly at runtime (`dlopen`) — no headers needed. `alpm.h` is only used by the optional `pnpm check-alpm-coverage` maintenance script, not at runtime                |
+| Node.js **>= 24.0** + pnpm         | koffi ships a prebuilt binary per platform, so `pnpm install` needs no compiler. The CLI also runs `.ts` sources directly via Node's native type-stripping — no compile step anywhere |
 
 ## Install and run
 
 ```bash
-npm install
+pnpm install
 ./src/cli/index.ts repos
 ```
 
-No compiler, no build step — `npm install` just pulls dependencies (koffi's
+No compiler, no build step — `pnpm install` just pulls dependencies (koffi's
 own native glue ships prebuilt), and Node runs the `.ts` sources directly
 (see [Architecture](#architecture)).
 
@@ -58,18 +58,18 @@ if they differ — informational only, not a failure.
 
 ### Commands
 
-| Command | Description |
-|---|---|
-| `list` | List installed packages. `--explicit`, `--deps`, `--unrequired` (orphans, matches `pacman -Qdt`), `--foreign`, `--repo <name>` |
-| `info <packages...>` | Full package details. `--sync` to look in sync repos instead of local, `--repo <name>` to restrict which one |
-| `search <patterns...>` | Regex search across sync repos (or `--local` for the local db). `--repo <name>` to restrict to one repo |
-| `files <package>` | List the files owned by an installed package |
-| `owns <path>` | Find which installed package owns a file path |
-| `deps <package>` | Forward dependencies. `--reverse` (what depends on it), `--optional`, `--tree` (recursive graph) |
-| `outdated` | Installed packages with a newer version in a registered sync repo |
-| `groups [name]` | List package groups, or the members of one. `--repo <name>` |
-| `repos` | List registered sync repos, in resolution priority order |
-| `config` | Show the effective configuration (parsed `pacman.conf` merged with libalpm handle state) |
+| Command                | Description                                                                                                                    |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `list`                 | List installed packages. `--explicit`, `--deps`, `--unrequired` (orphans, matches `pacman -Qdt`), `--foreign`, `--repo <name>` |
+| `info <packages...>`   | Full package details. `--sync` to look in sync repos instead of local, `--repo <name>` to restrict which one                   |
+| `search <patterns...>` | Regex search across sync repos (or `--local` for the local db). `--repo <name>` to restrict to one repo                        |
+| `files <package>`      | List the files owned by an installed package                                                                                   |
+| `owns <path>`          | Find which installed package owns a file path                                                                                  |
+| `deps <package>`       | Forward dependencies. `--reverse` (what depends on it), `--optional`, `--tree` (recursive graph)                               |
+| `outdated`             | Installed packages with a newer version in a registered sync repo                                                              |
+| `groups [name]`        | List package groups, or the members of one. `--repo <name>`                                                                    |
+| `repos`                | List registered sync repos, in resolution priority order                                                                       |
+| `config`               | Show the effective configuration (parsed `pacman.conf` merged with libalpm handle state)                                       |
 
 ```bash
 ./src/cli/index.ts repos
@@ -93,25 +93,25 @@ step involved.
 
 ### Global options
 
-| Option | Effect |
-|---|---|
-| `--json` | Structured JSON instead of a table (one stable envelope shape for every command) |
-| `--root <dir>` | Alternate root directory |
-| `--dbpath <dir>` | Alternate pacman database path |
-| `--config <file>` | Alternate `pacman.conf` path |
-| `--no-color` | Disable colored table output (also respects `NO_COLOR`) |
+| Option            | Effect                                                                           |
+| ----------------- | -------------------------------------------------------------------------------- |
+| `--json`          | Structured JSON instead of a table (one stable envelope shape for every command) |
+| `--root <dir>`    | Alternate root directory                                                         |
+| `--dbpath <dir>`  | Alternate pacman database path                                                   |
+| `--config <file>` | Alternate `pacman.conf` path                                                     |
+| `--no-color`      | Disable colored table output (also respects `NO_COLOR`)                          |
 
 `--root`/`--dbpath`/`--config` make it free to inspect a chroot or container
 without entering it.
 
 ### Exit codes
 
-| Code | Meaning |
-|---|---|
-| `0` | Success |
-| `1` | Not found (package, path, or group) |
-| `2` | Usage error |
-| `3` | libalpm error — the real `alpm_errno_t` code is included in `--json` error output |
+| Code | Meaning                                                                           |
+| ---- | --------------------------------------------------------------------------------- |
+| `0`  | Success                                                                           |
+| `1`  | Not found (package, path, or group)                                               |
+| `2`  | Usage error                                                                       |
+| `3`  | libalpm error — the real `alpm_errno_t` code is included in `--json` error output |
 
 ## Architecture
 
@@ -134,8 +134,10 @@ against the libalpm handle.
 ## Development
 
 ```bash
-npm run typecheck   # tsc --noEmit
-npm test            # config parser, siglevel tables, fixture-root queries, real-system smoke tests
+pnpm typecheck   # tsc --noEmit
+pnpm lint        # oxlint
+pnpm fmt         # oxfmt --check
+pnpm test        # config parser, siglevel tables, fixture-root queries, real-system smoke tests
 ```
 
 Tests run directly against the real system's `/etc/pacman.conf` and
@@ -152,7 +154,7 @@ CLI deliberately doesn't do). After a pacman upgrade that bumps libalpm's
 minor/patch version enough to introduce new functions, run:
 
 ```bash
-npm run check-alpm-coverage
+pnpm check-alpm-coverage
 ```
 
 It diffs the installed `alpm.h` against a checked-in baseline
@@ -165,7 +167,7 @@ story and `alpm_list_t` ownership (`alpm_list_free` vs. free-each-payload-
 then-`alpm_list_free`, see `src/core/koffi/marshal.ts`'s
 `freeListSpineOnly`/`freeListSpineAndPayload`), which can't be inferred from
 a C signature. After reviewing a diff, run
-`npm run check-alpm-coverage -- --update-baseline` to reset it.
+`pnpm check-alpm-coverage -- --update-baseline` to reset it.
 
 ## Roadmap / out of scope
 

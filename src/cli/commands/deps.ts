@@ -1,9 +1,8 @@
-import type { Command } from "commander";
-import type { GlobalOptions } from "../context.ts";
-import { openAlpm, formatDependency } from "../context.ts";
-import { printJsonOk } from "../render/json.ts";
-import type { Alpm } from "../../core/alpm.ts";
-import type { Dependency } from "../../core/types.ts";
+import type { Command } from 'commander';
+import type { GlobalOptions } from '../context.ts';
+import { openAlpm, formatDependency } from '../context.ts';
+import { printJsonOk } from '../render/json.ts';
+import type { Alpm } from '../../core/alpm.ts';
 
 interface DepsCommandOptions extends GlobalOptions {
   reverse?: boolean;
@@ -20,10 +19,12 @@ const MAX_TREE_DEPTH = 15;
 
 async function childNamesOf(alpm: Alpm, name: string, opts: DepsCommandOptions): Promise<string[]> {
   if (opts.reverse) {
-    return alpm.deps(name, { reverse: true, optional: opts.optional }) as Promise<string[]>;
+    return (await alpm.deps(name, { reverse: true, optional: opts.optional ?? false })).map((d) =>
+      typeof d === 'object' ? d.name : d,
+    );
   }
-  const deps = (await alpm.deps(name, { optional: opts.optional })) as Dependency[];
-  return deps.map((d) => d.name);
+  const deps = await alpm.deps(name, { optional: opts.optional ?? false });
+  return deps.map((d) => (typeof d === 'object' ? d.name : d));
 }
 
 /**
@@ -56,40 +57,42 @@ async function buildTree(
       if (depth === 0) throw err;
       names = [];
     }
-    const children = await Promise.all(names.map((childName) => buildTree(alpm, childName, opts, path, depth + 1)));
+    const children = await Promise.all(
+      names.map((childName) => buildTree(alpm, childName, opts, path, depth + 1)),
+    );
     return { name, children };
   } finally {
     path.delete(name);
   }
 }
 
-function renderTree(node: TreeNode, prefix = ""): string {
+function renderTree(node: TreeNode, prefix = ''): string {
   const lines = [node.name];
   node.children.forEach((child, i) => {
     const isLast = i === node.children.length - 1;
     lines.push(renderTreeLines(child, prefix, isLast));
   });
-  return lines.join("\n");
+  return lines.join('\n');
 }
 
 function renderTreeLines(node: TreeNode, parentPrefix: string, isLast: boolean): string {
-  const branch = isLast ? "└── " : "├── ";
-  const childPrefix = parentPrefix + (isLast ? "    " : "│   ");
+  const branch = isLast ? '└── ' : '├── ';
+  const childPrefix = parentPrefix + (isLast ? '    ' : '│   ');
   const lines = [`${parentPrefix}${branch}${node.name}`];
   node.children.forEach((child, i) => {
     lines.push(renderTreeLines(child, childPrefix, i === node.children.length - 1));
   });
-  return lines.join("\n");
+  return lines.join('\n');
 }
 
 export function registerDepsCommand(program: Command): void {
   program
-    .command("deps")
+    .command('deps')
     .description("show a package's dependencies, or what depends on it with --reverse")
-    .argument("<package>", "package name")
-    .option("--reverse", "show packages that depend on this one instead")
-    .option("--optional", "use optional dependencies instead of required ones")
-    .option("--tree", "recursively expand the dependency graph")
+    .argument('<package>', 'package name')
+    .option('--reverse', 'show packages that depend on this one instead')
+    .option('--optional', 'use optional dependencies instead of required ones')
+    .option('--tree', 'recursively expand the dependency graph')
     .action(async function (this: Command, name: string, opts: DepsCommandOptions) {
       const globalOpts = this.optsWithGlobals<GlobalOptions>();
       await using alpm = await openAlpm(globalOpts);
@@ -104,16 +107,19 @@ export function registerDepsCommand(program: Command): void {
         return;
       }
 
-      const result = await alpm.deps(name, { reverse: opts.reverse, optional: opts.optional });
+      const result = await alpm.deps(name, {
+        reverse: opts.reverse ?? false,
+        optional: opts.optional ?? false,
+      });
 
       if (globalOpts.json) {
         printJsonOk(result);
         return;
       }
       if (opts.reverse) {
-        for (const pkgName of result as string[]) console.log(pkgName);
+        for (const pkgName of result) console.log(pkgName);
       } else {
-        for (const dep of result as Dependency[]) console.log(formatDependency(dep));
+        for (const dep of result) console.log(formatDependency(dep));
       }
     });
 }

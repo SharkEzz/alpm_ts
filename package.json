@@ -3,19 +3,18 @@
   "version": "0.1.0",
   "description": "TypeScript CLI over libalpm for querying the Arch package database",
   "license": "MIT",
-  "type": "module",
-  "main": "src/cli/index.ts",
   "bin": {
     "alpm": "src/cli/index.ts"
   },
   "files": [
     "src"
   ],
-  "engines": {
-    "node": ">=23.6.0"
-  },
+  "type": "module",
+  "main": "src/cli/index.ts",
   "scripts": {
-    "typecheck": "tsc",
+    "typecheck": "tsc --noEmit",
+    "fmt": "oxfmt --check",
+    "lint": "oxlint",
     "test": "node --test test/core/*.test.ts test/koffi/*.test.ts test/smoke.test.ts",
     "check-alpm-coverage": "node scripts/check-alpm-coverage.ts"
   },
@@ -25,6 +24,12 @@
   },
   "devDependencies": {
     "@types/node": "^26.4.0",
+    "oxfmt": "^0.65.0",
+    "oxlint": "^1.80.0",
+    "oxlint-tsgolint": "^7.0.2001",
     "typescript": "^7.0.2"
+  },
+  "engines": {
+    "node": ">=24.0.0"
   }
 }

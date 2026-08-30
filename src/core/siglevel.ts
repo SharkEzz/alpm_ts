@@ -44,52 +44,55 @@ export function resolveSigLevel(words: readonly string[]): number {
   let level = 0;
   for (const word of words) {
     switch (word) {
-      case "Default":
+      case 'Default':
         level = ALPM_SIG_USE_DEFAULT;
         break;
-      case "Never":
+      case 'Never':
         level &= ~(PACKAGE_CHECK | DATABASE_CHECK);
         break;
-      case "Optional":
-        level = (level & ~(PACKAGE_CHECK | DATABASE_CHECK)) | ALPM_SIG_PACKAGE_OPTIONAL | ALPM_SIG_DATABASE_OPTIONAL;
+      case 'Optional':
+        level =
+          (level & ~(PACKAGE_CHECK | DATABASE_CHECK)) |
+          ALPM_SIG_PACKAGE_OPTIONAL |
+          ALPM_SIG_DATABASE_OPTIONAL;
         break;
-      case "Required":
+      case 'Required':
         level = (level & ~(PACKAGE_CHECK | DATABASE_CHECK)) | ALPM_SIG_PACKAGE | ALPM_SIG_DATABASE;
         break;
-      case "TrustedOnly":
+      case 'TrustedOnly':
         level &= ~(PACKAGE_TRUST | DATABASE_TRUST);
         break;
-      case "TrustAll":
+      case 'TrustAll':
         level |= PACKAGE_TRUST | DATABASE_TRUST;
         break;
-      case "PackageNever":
+      case 'PackageNever':
         level &= ~PACKAGE_CHECK;
         break;
-      case "PackageOptional":
+      case 'PackageOptional':
         level = (level & ~PACKAGE_CHECK) | ALPM_SIG_PACKAGE_OPTIONAL;
         break;
-      case "PackageRequired":
+      case 'PackageRequired':
         level = (level & ~PACKAGE_CHECK) | ALPM_SIG_PACKAGE;
         break;
-      case "PackageTrustedOnly":
+      case 'PackageTrustedOnly':
         level &= ~PACKAGE_TRUST;
         break;
-      case "PackageTrustAll":
+      case 'PackageTrustAll':
         level |= PACKAGE_TRUST;
         break;
-      case "DatabaseNever":
+      case 'DatabaseNever':
         level &= ~DATABASE_CHECK;
         break;
-      case "DatabaseOptional":
+      case 'DatabaseOptional':
         level = (level & ~DATABASE_CHECK) | ALPM_SIG_DATABASE_OPTIONAL;
         break;
-      case "DatabaseRequired":
+      case 'DatabaseRequired':
         level = (level & ~DATABASE_CHECK) | ALPM_SIG_DATABASE;
         break;
-      case "DatabaseTrustedOnly":
+      case 'DatabaseTrustedOnly':
         level &= ~DATABASE_TRUST;
         break;
-      case "DatabaseTrustAll":
+      case 'DatabaseTrustAll':
         level |= DATABASE_TRUST;
         break;
       default:
@@ -111,19 +114,19 @@ export function resolveUsage(words: readonly string[]): number {
   let usage = 0;
   for (const word of words) {
     switch (word) {
-      case "Sync":
+      case 'Sync':
         usage |= ALPM_DB_USAGE_SYNC;
         break;
-      case "Search":
+      case 'Search':
         usage |= ALPM_DB_USAGE_SEARCH;
         break;
-      case "Install":
+      case 'Install':
         usage |= ALPM_DB_USAGE_INSTALL;
         break;
-      case "Upgrade":
+      case 'Upgrade':
         usage |= ALPM_DB_USAGE_UPGRADE;
         break;
-      case "All":
+      case 'All':
         usage |= ALPM_DB_USAGE_ALL;
         break;
       default:

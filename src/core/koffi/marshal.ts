@@ -1,4 +1,5 @@
-import koffi from "koffi";
+// oxlint-disable typescript/no-unsafe-type-assertion
+import koffi from 'koffi';
 import {
   AlpmDepend,
   AlpmFile,
@@ -28,7 +29,7 @@ import {
   alpm_pkg_get_validation,
   alpm_pkg_get_version,
   libc_free,
-} from "./ffi.ts";
+} from './ffi.ts';
 import {
   FIELD_CONFLICTS,
   FIELD_DATES,
@@ -48,14 +49,14 @@ import {
   FIELD_URL,
   FIELD_VALIDATION,
   FIELD_VERSION,
-} from "../fields.ts";
-import type { RawPackage } from "../types.ts";
+} from '../fields.ts';
+import type { RawPackage } from '../types.ts';
 
 // A koffi pointer value: BigInt, or null/undefined for C NULL.
 export type Ptr = bigint | null | undefined;
 
 export function orEmpty(s: string | null | undefined): string {
-  return s ?? "";
+  return s ?? '';
 }
 
 // --- alpm_list_t traversal ---------------------------------------------------
@@ -79,7 +80,7 @@ export function walkList(head: Ptr): Ptr[] {
 
 /** Deep-copies a borrowed alpm_list_t of char* payloads into JS strings. Does not free `head`. */
 export function copyStringList(head: Ptr): string[] {
-  return walkList(head).map((ptr) => (ptr ? (koffi.decode.string(ptr) as string) : ""));
+  return walkList(head).map((ptr) => (ptr ? koffi.decode.string(ptr) : ''));
 }
 
 // --- alpm_list_t free discipline --------------------------------------------
@@ -123,8 +124,8 @@ export function buildStringList(values: string[]): CStringList {
   let head: Ptr = null;
   const buffers: bigint[] = [];
   for (const value of values) {
-    const encoded = Buffer.from(`${value}\0`, "utf8");
-    const ptr = koffi.alloc("char", encoded.length) as bigint;
+    const encoded = Buffer.from(`${value}\0`, 'utf8');
+    const ptr = koffi.alloc('char', encoded.length) as bigint;
     new Uint8Array(koffi.view(ptr, encoded.length)).set(encoded);
     buffers.push(ptr);
     head = alpm_list_add(head, ptr) as Ptr;
@@ -141,7 +142,7 @@ export function freeStringList(list: CStringList): void {
 
 /** "local"/empty -> alpm_get_localdb(); else looked up by name among alpm_get_syncdbs(). */
 export function resolveDb(handle: bigint, dbName: string): Ptr {
-  if (!dbName || dbName === "local") {
+  if (!dbName || dbName === 'local') {
     return alpm_get_localdb(handle) as Ptr;
   }
   for (const ptr of walkList(alpm_get_syncdbs(handle) as Ptr)) {
@@ -156,17 +157,17 @@ export interface DependencyRecord {
   name: string;
   version: string;
   desc: string;
-  mod: "" | "=" | ">=" | "<=" | ">" | "<";
+  mod: '' | '=' | '>=' | '<=' | '>' | '<';
 }
 
 // alpm_depmod_t (alpm.h): ANY=1, EQ=2, GE=3, LE=4, GT=5, LT=6.
-const DEP_MOD: Record<number, DependencyRecord["mod"]> = {
-  1: "",
-  2: "=",
-  3: ">=",
-  4: "<=",
-  5: ">",
-  6: "<",
+const DEP_MOD: Record<number, DependencyRecord['mod']> = {
+  1: '',
+  2: '=',
+  3: '>=',
+  4: '<=',
+  5: '>',
+  6: '<',
 };
 
 interface AlpmDependStruct {
@@ -177,13 +178,13 @@ interface AlpmDependStruct {
 }
 
 export function marshalDependency(ptr: Ptr): DependencyRecord {
-  if (!ptr) return { name: "", version: "", desc: "", mod: "" };
+  if (!ptr) return { name: '', version: '', desc: '', mod: '' };
   const dep = koffi.decode(ptr, AlpmDepend) as AlpmDependStruct;
   return {
     name: orEmpty(dep.name),
     version: orEmpty(dep.version),
     desc: orEmpty(dep.desc),
-    mod: DEP_MOD[dep.mod] ?? "",
+    mod: DEP_MOD[dep.mod] ?? '',
   };
 }
 

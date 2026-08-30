@@ -1,5 +1,5 @@
-import { Alpm } from "../core/alpm.ts";
-import type { Dependency } from "../core/types.ts";
+import { Alpm } from '../core/alpm.ts';
+import type { Dependency } from '../core/types.ts';
 
 export const EXIT_OK = 0;
 export const EXIT_NOT_FOUND = 1;
@@ -18,9 +18,15 @@ export interface GlobalOptions {
 }
 
 export function openAlpm(opts: GlobalOptions): Promise<Alpm> {
-  return Alpm.open({ configPath: opts.config, root: opts.root, dbPath: opts.dbpath });
+  return Alpm.open({
+    ...(opts.config ? { configPath: opts.config } : undefined),
+    ...(opts.root ? { root: opts.root } : undefined),
+    ...(opts.dbpath ? { dbPath: opts.dbpath } : undefined),
+  });
 }
 
-export function formatDependency(dep: Dependency): string {
+export function formatDependency(dep: Dependency | string): string {
+  if (typeof dep === 'string') return dep;
+
   return dep.mod ? `${dep.name}${dep.mod}${dep.version}` : dep.name;
 }

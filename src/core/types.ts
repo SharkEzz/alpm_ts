@@ -1,15 +1,15 @@
 // alpm_pkgreason_t (alpm.h): EXPLICIT=0, DEPEND=1, UNKNOWN=2.
-export type PackageReason = "explicit" | "dependency" | "unknown";
+export type PackageReason = 'explicit' | 'dependency' | 'unknown';
 
 // alpm_pkgvalidation_t is a bitmask (NONE=1, MD5SUM=2, SHA256SUM=4, SIGNATURE=8);
 // 0 means unknown/unset.
-export type ValidationMethod = "none" | "md5sum" | "sha256sum" | "signature";
+export type ValidationMethod = 'none' | 'md5sum' | 'sha256sum' | 'signature';
 
 export interface Dependency {
   name: string;
   version: string;
   desc: string;
-  mod: "" | "=" | ">=" | "<=" | ">" | "<";
+  mod: '' | '=' | '>=' | '<=' | '>' | '<';
 }
 
 export interface FileEntry {
@@ -68,20 +68,20 @@ export interface RawPackage {
   files?: FileEntry[];
 }
 
-const REASONS: PackageReason[] = ["explicit", "dependency", "unknown"];
+const REASONS: PackageReason[] = ['explicit', 'dependency', 'unknown'];
 
 function decodeReason(reason: number | undefined): PackageReason {
-  return REASONS[reason ?? 2] ?? "unknown";
+  return REASONS[reason ?? 2] ?? 'unknown';
 }
 
 function decodeValidation(bitmask: number | undefined): ValidationMethod[] {
   if (bitmask === undefined) return [];
   const methods: ValidationMethod[] = [];
   if (bitmask === 0) return methods;
-  if (bitmask & (1 << 0)) methods.push("none");
-  if (bitmask & (1 << 1)) methods.push("md5sum");
-  if (bitmask & (1 << 2)) methods.push("sha256sum");
-  if (bitmask & (1 << 3)) methods.push("signature");
+  if (bitmask & (1 << 0)) methods.push('none');
+  if (bitmask & (1 << 1)) methods.push('md5sum');
+  if (bitmask & (1 << 2)) methods.push('sha256sum');
+  if (bitmask & (1 << 3)) methods.push('signature');
   return methods;
 }
 
@@ -92,9 +92,9 @@ function decodeDate(epochSeconds: number | undefined): Date | undefined {
 
 export function mapPackage(raw: RawPackage): Package {
   const pkg: Package = {
-    name: raw.name ?? "",
-    version: raw.version ?? "",
-    db: raw.db ?? "",
+    name: raw.name ?? '',
+    version: raw.version ?? '',
+    db: raw.db ?? '',
     isize: raw.isize ?? 0,
     reason: decodeReason(raw.reason),
   };
@@ -108,9 +108,17 @@ export function mapPackage(raw: RawPackage): Package {
   if (raw.conflicts !== undefined) pkg.conflicts = raw.conflicts;
   if (raw.replaces !== undefined) pkg.replaces = raw.replaces;
   if (raw.packager !== undefined) pkg.packager = raw.packager;
-  if (raw.builddate !== undefined) pkg.builddate = decodeDate(raw.builddate);
-  if (raw.installdate !== undefined) pkg.installdate = decodeDate(raw.installdate);
   if (raw.validation !== undefined) pkg.validation = decodeValidation(raw.validation);
   if (raw.files !== undefined) pkg.files = raw.files;
+
+  const buildDate = decodeDate(raw.builddate);
+  if (buildDate) {
+    pkg.builddate = buildDate;
+  }
+  const installDate = decodeDate(raw.installdate);
+  if (installDate) {
+    pkg.installdate = installDate;
+  }
+
   return pkg;
 }

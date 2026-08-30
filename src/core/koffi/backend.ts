@@ -1,7 +1,8 @@
-import koffi from "koffi";
-import type { Backend, RawGroup, RawOptions } from "../backend.ts";
-import type { RawPackage } from "../types.ts";
-import { FIELDS_FULL, FIELDS_SUMMARY } from "../fields.ts";
+// oxlint-disable typescript/no-unsafe-type-assertion
+import koffi from 'koffi';
+import type { Backend, RawGroup, RawOptions } from '../backend.ts';
+import type { RawPackage } from '../types.ts';
+import { FIELDS_FULL, FIELDS_SUMMARY } from '../fields.ts';
 import {
   AlpmGroup,
   alpm_capabilities,
@@ -33,7 +34,7 @@ import {
   alpm_strerror,
   alpm_sync_get_new_version,
   alpm_version,
-} from "./ffi.ts";
+} from './ffi.ts';
 import {
   buildStringList,
   copyStringList,
@@ -45,7 +46,7 @@ import {
   resolveDb,
   walkList,
   type Ptr,
-} from "./marshal.ts";
+} from './marshal.ts';
 
 function nonNullPtrs(head: Ptr): bigint[] {
   return walkList(head).filter((ptr): ptr is bigint => ptr != null);
@@ -106,13 +107,13 @@ export class KoffiBackend implements Backend {
   }
 
   private requireHandle(): bigint {
-    if (this.handle === null) throw new Error("handle is closed");
+    if (this.handle === null) throw new Error('handle is closed');
     return this.handle;
   }
 
   open(root: string, dbpath: string): Promise<void> {
     return this.run(() => {
-      if (this.handle !== null) throw new Error("handle is already open");
+      if (this.handle !== null) throw new Error('handle is already open');
       const errOut: number[] = [0];
       const handle = alpm_initialize(root, dbpath, errOut) as Ptr;
       if (!handle) throw makeAlpmError(errOut[0]);
@@ -126,7 +127,7 @@ export class KoffiBackend implements Backend {
       const handle = this.handle;
       const rc = alpm_release(handle) as number;
       this.handle = null;
-      if (rc !== 0) throw new Error("alpm_release failed");
+      if (rc !== 0) throw new Error('alpm_release failed');
     });
   }
 
@@ -145,12 +146,13 @@ export class KoffiBackend implements Backend {
   listPackages(dbName?: string, fields?: number): Promise<RawPackage[]> {
     return this.run(() => {
       const handle = this.requireHandle();
-      const db = resolveDb(handle, dbName ?? "local");
+      const db = resolveDb(handle, dbName ?? 'local');
       if (!db) throw makeAlpmError(ALPM_ERR_DB_NOT_FOUND);
       const resolvedName = orEmpty(alpm_db_get_name(db) as string | null);
       const f = fields ?? FIELDS_SUMMARY;
       const packages: RawPackage[] = [];
-      for (const ptr of nonNullPtrs(alpm_db_get_pkgcache(db) as Ptr)) packages.push(marshalPackage(ptr, f, resolvedName));
+      for (const ptr of nonNullPtrs(alpm_db_get_pkgcache(db) as Ptr))
+        packages.push(marshalPackage(ptr, f, resolvedName));
       return packages;
     });
   }
@@ -158,7 +160,7 @@ export class KoffiBackend implements Backend {
   getPackage(name: string, dbName?: string, fields?: number): Promise<RawPackage | null> {
     return this.run(() => {
       const handle = this.requireHandle();
-      const db = resolveDb(handle, dbName ?? "local");
+      const db = resolveDb(handle, dbName ?? 'local');
       if (!db) throw makeAlpmError(ALPM_ERR_DB_NOT_FOUND);
       const pkg = alpm_db_get_pkg(db, name) as Ptr;
       if (!pkg) return null;
@@ -169,7 +171,7 @@ export class KoffiBackend implements Backend {
   search(needles: string[], dbName?: string, fields?: number): Promise<RawPackage[]> {
     return this.run(() => {
       const handle = this.requireHandle();
-      const db = resolveDb(handle, dbName ?? "local");
+      const db = resolveDb(handle, dbName ?? 'local');
       if (!db) throw makeAlpmError(ALPM_ERR_DB_NOT_FOUND);
 
       const needleList = buildStringList(needles);
@@ -224,7 +226,7 @@ export class KoffiBackend implements Backend {
   owners(path: string, fields?: number): Promise<RawPackage[]> {
     return this.run(() => {
       const handle = this.requireHandle();
-      const cleanPath = path.startsWith("/") ? path.slice(1) : path;
+      const cleanPath = path.startsWith('/') ? path.slice(1) : path;
       const db = alpm_get_localdb(handle) as Ptr;
       const f = fields ?? FIELDS_SUMMARY;
       const result: RawPackage[] = [];
@@ -233,7 +235,7 @@ export class KoffiBackend implements Backend {
         const filelist = alpm_pkg_get_files(pkg) as Ptr;
         if (!filelist) continue;
         if (alpm_filelist_contains(filelist, cleanPath) as Ptr) {
-          result.push(marshalPackage(pkg, f, "local"));
+          result.push(marshalPackage(pkg, f, 'local'));
         }
       }
       return result;
@@ -243,7 +245,7 @@ export class KoffiBackend implements Backend {
   private computeRelated(name: string, dbName: string | undefined, optional: boolean): Promise<string[]> {
     return this.run(() => {
       const handle = this.requireHandle();
-      const db = resolveDb(handle, dbName ?? "local");
+      const db = resolveDb(handle, dbName ?? 'local');
       if (!db) throw makeAlpmError(ALPM_ERR_DB_NOT_FOUND);
       const pkg = alpm_db_get_pkg(db, name) as Ptr;
       if (!pkg) throw makeAlpmError(ALPM_ERR_PKG_NOT_FOUND);
@@ -269,13 +271,14 @@ export class KoffiBackend implements Backend {
   groups(dbName?: string): Promise<RawGroup[]> {
     return this.run(() => {
       const handle = this.requireHandle();
-      const db = resolveDb(handle, dbName ?? "local");
+      const db = resolveDb(handle, dbName ?? 'local');
       if (!db) throw makeAlpmError(ALPM_ERR_DB_NOT_FOUND);
       const groups: RawGroup[] = [];
       for (const groupPtr of nonNullPtrs(alpm_db_get_groupcache(db) as Ptr)) {
         const group = koffi.decode(groupPtr, AlpmGroup) as { name: string | null; packages: Ptr };
         const packages: string[] = [];
-        for (const pkg of nonNullPtrs(group.packages)) packages.push(orEmpty(alpm_pkg_get_name(pkg) as string | null));
+        for (const pkg of nonNullPtrs(group.packages))
+          packages.push(orEmpty(alpm_pkg_get_name(pkg) as string | null));
         groups.push({ name: orEmpty(group.name), packages });
       }
       return groups;
@@ -291,7 +294,7 @@ export class KoffiBackend implements Backend {
       const newer = alpm_sync_get_new_version(local, alpm_get_syncdbs(handle) as Ptr) as Ptr;
       if (!newer) return null;
       const db = alpm_pkg_get_db(newer) as Ptr;
-      const dbName = db ? orEmpty(alpm_db_get_name(db) as string | null) : "";
+      const dbName = db ? orEmpty(alpm_db_get_name(db) as string | null) : '';
       return marshalPackage(newer, fields ?? FIELDS_SUMMARY, dbName);
     });
   }

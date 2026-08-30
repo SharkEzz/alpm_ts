@@ -1,5 +1,5 @@
-import type { RawPackage } from "./types.ts";
-import { koffiCapabilities, koffiVercmp, koffiVersion } from "./koffi/backend.ts";
+import type { RawPackage } from './types.ts';
+import { koffiCapabilities, koffiVercmp, koffiVersion } from './koffi/backend.ts';
 
 export interface RawGroup {
   name: string;

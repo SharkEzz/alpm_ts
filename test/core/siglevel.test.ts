@@ -1,5 +1,5 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
 import {
   resolveSigLevel,
   resolveUsage,
@@ -15,25 +15,25 @@ import {
   ALPM_DB_USAGE_ALL,
   ALPM_DB_USAGE_SYNC,
   ALPM_DB_USAGE_SEARCH,
-} from "../../src/core/siglevel.ts";
+} from '../../src/core/siglevel.ts';
 
-test("resolveSigLevel: no words means USE_DEFAULT (bit 30)", () => {
+test('resolveSigLevel: no words means USE_DEFAULT (bit 30)', () => {
   assert.equal(resolveSigLevel([]), ALPM_SIG_USE_DEFAULT);
   assert.equal(ALPM_SIG_USE_DEFAULT, 1 << 30);
 });
 
 test("resolveSigLevel: 'Required TrustedOnly' matches pacman.conf(5)'s documented built-in default", () => {
-  assert.equal(resolveSigLevel(["Required", "TrustedOnly"]), ALPM_SIG_PACKAGE | ALPM_SIG_DATABASE);
+  assert.equal(resolveSigLevel(['Required', 'TrustedOnly']), ALPM_SIG_PACKAGE | ALPM_SIG_DATABASE);
 });
 
-test("resolveSigLevel: Package-prefixed words only touch the package bits", () => {
-  const level = resolveSigLevel(["Required", "TrustedOnly", "PackageOptional"]);
+test('resolveSigLevel: Package-prefixed words only touch the package bits', () => {
+  const level = resolveSigLevel(['Required', 'TrustedOnly', 'PackageOptional']);
   assert.equal(level, ALPM_SIG_PACKAGE_OPTIONAL | ALPM_SIG_DATABASE);
 });
 
 test("resolveSigLevel: concatenating [options] words then a repo's own words implements inheritance-with-override", () => {
-  const optionsWords = ["Required", "TrustedOnly"];
-  const repoWords = ["Optional", "TrustAll"];
+  const optionsWords = ['Required', 'TrustedOnly'];
+  const repoWords = ['Optional', 'TrustAll'];
   const combined = resolveSigLevel([...optionsWords, ...repoWords]);
   assert.equal(
     combined,
@@ -47,22 +47,22 @@ test("resolveSigLevel: concatenating [options] words then a repo's own words imp
 });
 
 test("resolveSigLevel: 'Never' clears the check bits even after 'Required'", () => {
-  assert.equal(resolveSigLevel(["Required", "Never"]), 0);
+  assert.equal(resolveSigLevel(['Required', 'Never']), 0);
 });
 
-test("resolveSigLevel: rejects an unknown word", () => {
-  assert.throws(() => resolveSigLevel(["NotAWord"]), /unknown SigLevel word/);
+test('resolveSigLevel: rejects an unknown word', () => {
+  assert.throws(() => resolveSigLevel(['NotAWord']), /unknown SigLevel word/);
 });
 
-test("resolveUsage: no words means ALL, per pacman.conf(5) (\"the default if not specified\")", () => {
+test('resolveUsage: no words means ALL, per pacman.conf(5) ("the default if not specified")', () => {
   assert.equal(resolveUsage([]), ALPM_DB_USAGE_ALL);
   assert.equal(ALPM_DB_USAGE_ALL, (1 << 4) - 1);
 });
 
-test("resolveUsage: Sync + Search combine as a bitmask", () => {
-  assert.equal(resolveUsage(["Sync", "Search"]), ALPM_DB_USAGE_SYNC | ALPM_DB_USAGE_SEARCH);
+test('resolveUsage: Sync + Search combine as a bitmask', () => {
+  assert.equal(resolveUsage(['Sync', 'Search']), ALPM_DB_USAGE_SYNC | ALPM_DB_USAGE_SEARCH);
 });
 
-test("resolveUsage: rejects an unknown word", () => {
-  assert.throws(() => resolveUsage(["NotAWord"]), /unknown Usage word/);
+test('resolveUsage: rejects an unknown word', () => {
+  assert.throws(() => resolveUsage(['NotAWord']), /unknown Usage word/);
 });

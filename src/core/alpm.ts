@@ -1,10 +1,10 @@
-import { parsePacmanConfig, type PacmanConfig } from "./config.ts";
-import { resolveSigLevel, resolveUsage } from "./siglevel.ts";
-import { type Backend, type RawOptions } from "./backend.ts";
-import { KoffiBackend } from "./koffi/backend.ts";
-import { mapPackage, type Package, type Group, type Dependency, type FileEntry } from "./types.ts";
-import { AlpmError, isNativeAlpmError } from "./errors.ts";
-import { FIELDS_SUMMARY, FIELDS_FULL, FIELD_FILES, FIELD_GROUPS } from "./fields.ts";
+import { parsePacmanConfig, type PacmanConfig } from './config.ts';
+import { resolveSigLevel, resolveUsage } from './siglevel.ts';
+import { type Backend, type RawOptions } from './backend.ts';
+import { KoffiBackend } from './koffi/backend.ts';
+import { mapPackage, type Package, type Group, type Dependency, type FileEntry } from './types.ts';
+import { AlpmError, isNativeAlpmError } from './errors.ts';
+import { FIELDS_SUMMARY, FIELDS_FULL, FIELD_FILES, FIELD_GROUPS } from './fields.ts';
 
 export interface OpenOptions {
   configPath?: string;
@@ -67,7 +67,7 @@ export class Alpm {
    * handle's lifetime, so CLI overrides must be resolved before open()).
    */
   static async open(opts: OpenOptions = {}): Promise<Alpm> {
-    const config = parsePacmanConfig(opts.configPath ?? "/etc/pacman.conf");
+    const config = parsePacmanConfig(opts.configPath ?? '/etc/pacman.conf');
     const root = opts.root ?? config.options.rootDir;
     const dbPath = opts.dbPath ?? config.options.dbPath;
 
@@ -109,19 +109,19 @@ export class Alpm {
   private resolveRepoNames(repo?: string): string[] {
     if (repo === undefined) return this.syncRepoNames;
     if (!this.syncRepoNames.includes(repo)) {
-      throw new Error(`no such repo: ${repo} (registered: ${this.syncRepoNames.join(", ")})`);
+      throw new Error(`no such repo: ${repo} (registered: ${this.syncRepoNames.join(', ')})`);
     }
     return [repo];
   }
 
   async list(opts: ListOptions = {}): Promise<Package[]> {
-    const raws = await wrap(this.backend.listPackages(opts.repo ?? "local", opts.fields ?? FIELDS_SUMMARY));
+    const raws = await wrap(this.backend.listPackages(opts.repo ?? 'local', opts.fields ?? FIELDS_SUMMARY));
     return raws.map(mapPackage);
   }
 
   async info(name: string, opts: InfoOptions = {}): Promise<Package | null> {
     if (!opts.sync) {
-      const raw = await wrap(this.backend.getPackage(name, "local", FIELDS_FULL));
+      const raw = await wrap(this.backend.getPackage(name, 'local', FIELDS_FULL));
       return raw ? mapPackage(raw) : null;
     }
     for (const repoName of this.resolveRepoNames(opts.repo)) {
@@ -139,13 +139,13 @@ export class Alpm {
    */
   async search(needles: string[], opts: SearchOptions = {}): Promise<Package[]> {
     if (opts.local) {
-      return (await wrap(this.backend.search(needles, "local", FIELDS_SUMMARY))).map(mapPackage);
+      return (await wrap(this.backend.search(needles, 'local', FIELDS_SUMMARY))).map(mapPackage);
     }
     const seen = new Set<string>();
     const results: Package[] = [];
     for (const repoName of this.resolveRepoNames(opts.repo)) {
       for (const raw of await wrap(this.backend.search(needles, repoName, FIELDS_SUMMARY))) {
-        const name = raw.name ?? "";
+        const name = raw.name ?? '';
         if (seen.has(name)) continue;
         seen.add(name);
         results.push(mapPackage(raw));
@@ -159,7 +159,7 @@ export class Alpm {
   }
 
   async files(name: string): Promise<FileEntry[] | null> {
-    const raw = await wrap(this.backend.getPackage(name, "local", FIELD_FILES));
+    const raw = await wrap(this.backend.getPackage(name, 'local', FIELD_FILES));
     return raw ? (raw.files ?? []) : null;
   }
 
@@ -167,16 +167,16 @@ export class Alpm {
   async deps(name: string, opts: DepsOptions = {}): Promise<Dependency[] | string[]> {
     if (opts.reverse) {
       return opts.optional
-        ? wrap(this.backend.optionalFor(name, "local"))
-        : wrap(this.backend.requiredBy(name, "local"));
+        ? wrap(this.backend.optionalFor(name, 'local'))
+        : wrap(this.backend.requiredBy(name, 'local'));
     }
-    const raw = await wrap(this.backend.getPackage(name, "local", FIELDS_FULL));
+    const raw = await wrap(this.backend.getPackage(name, 'local', FIELDS_FULL));
     if (!raw) throw new Error(`package not found: ${name}`);
     return (opts.optional ? raw.optdepends : raw.depends) ?? [];
   }
 
   async groups(name?: string, opts: { repo?: string } = {}): Promise<Group[]> {
-    const groups = await wrap(this.backend.groups(opts.repo ?? "local"));
+    const groups = await wrap(this.backend.groups(opts.repo ?? 'local'));
     return name ? groups.filter((g) => g.name === name) : groups;
   }
 
@@ -187,16 +187,21 @@ export class Alpm {
    * round-trip per package.
    */
   async outdated(): Promise<OutdatedEntry[]> {
-    const installed = await wrap(this.backend.listPackages("local", FIELDS_SUMMARY | FIELD_GROUPS));
+    const installed = await wrap(this.backend.listPackages('local', FIELDS_SUMMARY | FIELD_GROUPS));
     const results: OutdatedEntry[] = [];
     for (const raw of installed) {
-      const name = raw.name ?? "";
+      const name = raw.name ?? '';
       if (this.config.options.ignorePkgs.includes(name)) continue;
       if (raw.groups?.some((g) => this.config.options.ignoreGroups.includes(g))) continue;
 
       const newer = await wrap(this.backend.newVersion(name, FIELDS_SUMMARY));
       if (newer) {
-        results.push({ name, currentVersion: raw.version ?? "", newVersion: newer.version ?? "", db: newer.db ?? "" });
+        results.push({
+          name,
+          currentVersion: raw.version ?? '',
+          newVersion: newer.version ?? '',
+          db: newer.db ?? '',
+        });
       }
     }
     return results;
