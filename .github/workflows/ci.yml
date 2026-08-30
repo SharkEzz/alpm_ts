@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    # This is an Arch-only tool (libalpm has no meaningful build on other
+    # distros), so CI runs inside an Arch Linux container rather than the
+    # runner's own Ubuntu base.
+    container:
+      image: archlinux:base
+    steps:
+      - name: Install toolchain
+        run: pacman -Syu --noconfirm --needed nodejs npm pnpm git
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # test/smoke.test.ts asserts it isn't running as root (alpm-ts is a
+      # read-only tool and should never need root), so every later step
+      # runs as an unprivileged user instead of the container's default root.
+      - name: Create a non-root user
+        run: |
+          useradd --create-home ci
+          chown -R ci:ci "$GITHUB_WORKSPACE"
+
+      - name: Install dependencies
+        run: su ci -c "cd '$GITHUB_WORKSPACE' && pnpm install --frozen-lockfile"
+
+      - name: Format check
+        run: su ci -c "cd '$GITHUB_WORKSPACE' && pnpm fmt"
+
+      - name: Lint
+        run: su ci -c "cd '$GITHUB_WORKSPACE' && pnpm lint"
+
+      - name: Build (typecheck)
+        run: su ci -c "cd '$GITHUB_WORKSPACE' && pnpm typecheck"
+
+      - name: Test
+        run: su ci -c "cd '$GITHUB_WORKSPACE' && pnpm test"
