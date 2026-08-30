@@ -23,7 +23,13 @@ void CheckVersion(Napi::Env env) {
     msg << "alpm-ts native addon was built against libalpm " << build_version
         << " but the runtime library is " << runtime_version
         << " (soname/major mismatch) - rebuild the addon: npm rebuild alpm-ts";
-    Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
+    Napi::Error err = Napi::Error::New(env, msg.str());
+    // A machine-readable marker so src/core/backend.ts can detect exactly
+    // this failure (and auto-rebuild) without string-matching the message.
+    err.Set("code", Napi::String::New(env, "ALPM_TS_VERSION_MISMATCH"));
+    err.Set("builtVersion", Napi::String::New(env, build_version));
+    err.Set("runtimeVersion", Napi::String::New(env, runtime_version));
+    err.ThrowAsJavaScriptException();
   }
 }
 

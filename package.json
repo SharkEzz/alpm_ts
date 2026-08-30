@@ -4,6 +4,7 @@
   "description": "TypeScript CLI over libalpm for querying the Arch package database",
   "license": "MIT",
   "type": "module",
+  "main": "src/cli/index.ts",
   "bin": {
     "alpm": "src/cli/index.ts"
   },
@@ -19,15 +20,16 @@
     "install": "node-gyp rebuild --directory=native",
     "typecheck": "tsc",
     "test": "node --test test/core/*.test.ts test/native/*.test.ts test/smoke.test.ts",
+    "check-alpm-coverage": "node scripts/check-alpm-coverage.ts",
     "clean": "rm -rf native/build"
   },
   "dependencies": {
-    "commander": "15.0.0",
-    "node-addon-api": "8.9.2"
+    "commander": "^15.0.0",
+    "node-addon-api": "^8.9.2",
+    "node-gyp": "^13.0.2"
   },
   "devDependencies": {
-    "@types/node": "26.4.0",
-    "node-gyp": "13.0.2",
-    "typescript": "7.0.2"
+    "@types/node": "^26.4.0",
+    "typescript": "^7.0.2"
   }
 }
