@@ -52,13 +52,24 @@ class HandleWorker : public Napi::AsyncWorker {
   // Subclass: libalpm calls only, filling result_ with plain C++ types.
   virtual void RunAlpm(alpm_handle_t* alpm) = 0;
 
+  // Prefer this over the bare SetError(string) when a real alpm_errno_t is
+  // available, so the rejected Error carries `.code` for src/core/errors.ts
+  // to map - same as MakeAlpmError, just reachable from RunAlpm().
+  void SetAlpmError(alpm_errno_t err) {
+    alpm_err_ = err;
+    SetError(alpm_strerror(err));
+  }
+
   void OnOK() final { deferred_.Resolve(result_.ToJs(Env())); }
 
-  void OnError(const Napi::Error& e) final { deferred_.Reject(e.Value()); }
+  void OnError(const Napi::Error& e) final {
+    deferred_.Reject(alpm_err_ == ALPM_ERR_OK ? e.Value() : MakeAlpmError(Env(), alpm_err_).Value());
+  }
 
   Napi::Promise::Deferred deferred_;
   std::mutex* mutex_;
   bool* open_flag_;
   alpm_handle_t** alpm_;
   Result result_;
+  alpm_errno_t alpm_err_ = ALPM_ERR_OK;
 };

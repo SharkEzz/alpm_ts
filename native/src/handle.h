@@ -20,6 +20,17 @@ class Handle : public Napi::ObjectWrap<Handle> {
   Napi::Value Open(const Napi::CallbackInfo& info);
   Napi::Value Close(const Napi::CallbackInfo& info);
   Napi::Value Options(const Napi::CallbackInfo& info);
+  Napi::Value ListPackages(const Napi::CallbackInfo& info);
+  Napi::Value GetPackage(const Napi::CallbackInfo& info);
+  Napi::Value Search(const Napi::CallbackInfo& info);
+  Napi::Value RegisterSyncDb(const Napi::CallbackInfo& info);
+  Napi::Value SetArchitectures(const Napi::CallbackInfo& info);
+  Napi::Value AddIgnorePkg(const Napi::CallbackInfo& info);
+  Napi::Value Owners(const Napi::CallbackInfo& info);
+  Napi::Value RequiredBy(const Napi::CallbackInfo& info);
+  Napi::Value OptionalFor(const Napi::CallbackInfo& info);
+  Napi::Value Groups(const Napi::CallbackInfo& info);
+  Napi::Value NewVersion(const Napi::CallbackInfo& info);
 
   alpm_handle_t* alpm_ = nullptr;
   std::mutex mutex_;

@@ -6,6 +6,17 @@ Napi::Function Handle::GetClass(Napi::Env env) {
                           Handle::InstanceMethod("open", &Handle::Open),
                           Handle::InstanceMethod("close", &Handle::Close),
                           Handle::InstanceMethod("options", &Handle::Options),
+                          Handle::InstanceMethod("listPackages", &Handle::ListPackages),
+                          Handle::InstanceMethod("getPackage", &Handle::GetPackage),
+                          Handle::InstanceMethod("search", &Handle::Search),
+                          Handle::InstanceMethod("registerSyncDb", &Handle::RegisterSyncDb),
+                          Handle::InstanceMethod("setArchitectures", &Handle::SetArchitectures),
+                          Handle::InstanceMethod("addIgnorePkg", &Handle::AddIgnorePkg),
+                          Handle::InstanceMethod("owners", &Handle::Owners),
+                          Handle::InstanceMethod("requiredBy", &Handle::RequiredBy),
+                          Handle::InstanceMethod("optionalFor", &Handle::OptionalFor),
+                          Handle::InstanceMethod("groups", &Handle::Groups),
+                          Handle::InstanceMethod("newVersion", &Handle::NewVersion),
                       });
 }
 
