@@ -5,21 +5,21 @@
   "license": "MIT",
   "type": "module",
   "bin": {
-    "alpm": "dist/cli/index.js"
+    "alpm": "src/cli/index.ts"
   },
   "files": [
-    "dist",
+    "src",
     "native/binding.gyp",
     "native/src"
   ],
   "engines": {
-    "node": ">=20"
+    "node": ">=23.6.0"
   },
   "scripts": {
     "install": "node-gyp rebuild --directory=native",
-    "build": "tsc",
+    "typecheck": "tsc",
     "test": "node --test",
-    "clean": "rm -rf dist native/build"
+    "clean": "rm -rf native/build"
   },
   "dependencies": {
     "commander": "15.0.0",
