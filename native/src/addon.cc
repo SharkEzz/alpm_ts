@@ -5,6 +5,8 @@
 #include <sstream>
 #include <string>
 
+#include "handle.h"
+
 namespace {
 
 int MajorVersion(const std::string& version) {
@@ -59,6 +61,7 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
   exports.Set("version", Napi::Function::New(env, Version));
   exports.Set("capabilities", Napi::Function::New(env, Capabilities));
   exports.Set("vercmp", Napi::Function::New(env, Vercmp));
+  exports.Set("Handle", Handle::GetClass(env));
   return exports;
 }
 
