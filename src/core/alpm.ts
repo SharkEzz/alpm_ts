@@ -1,6 +1,7 @@
 import { parsePacmanConfig, type PacmanConfig } from "./config.ts";
 import { resolveSigLevel, resolveUsage } from "./siglevel.ts";
-import { NativeBackend, type Backend, type RawOptions } from "./backend.ts";
+import { type Backend, type RawOptions } from "./backend.ts";
+import { KoffiBackend } from "./koffi/backend.ts";
 import { mapPackage, type Package, type Group, type Dependency, type FileEntry } from "./types.ts";
 import { AlpmError, isNativeAlpmError } from "./errors.ts";
 import { FIELDS_SUMMARY, FIELDS_FULL, FIELD_FILES, FIELD_GROUPS } from "./fields.ts";
@@ -61,7 +62,7 @@ export class Alpm {
   }
 
   /**
-   * Parses pacman.conf, opens the native handle, and registers every sync
+   * Parses pacman.conf, opens the libalpm handle, and registers every sync
    * repo in config order (constraint 4: root/dbpath are fixed for the
    * handle's lifetime, so CLI overrides must be resolved before open()).
    */
@@ -70,7 +71,7 @@ export class Alpm {
     const root = opts.root ?? config.options.rootDir;
     const dbPath = opts.dbPath ?? config.options.dbPath;
 
-    const backend = new NativeBackend();
+    const backend = new KoffiBackend();
     await wrap(backend.open(root, dbPath));
 
     try {
@@ -182,7 +183,7 @@ export class Alpm {
   /**
    * Local vs sync version comparison (`pacman -Qu` without a prior -Sy).
    * The IgnorePkg/IgnoreGroup check mirrors alpm_pkg_should_ignore, done in
-   * TS against the already-parsed config rather than an extra native
+   * TS against the already-parsed config rather than an extra libalpm
    * round-trip per package.
    */
   async outdated(): Promise<OutdatedEntry[]> {

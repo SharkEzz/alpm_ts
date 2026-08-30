@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 /**
- * Reports libalpm functions that aren't wrapped by the native addon yet -
+ * Reports libalpm functions that aren't wrapped by the koffi backend yet -
  * informational only. It does NOT generate bindings or CLI commands: each
- * wrapped function in native/src/ required a human call about mutex/
- * thread-safety and alpm_list_t ownership (see native/src/marshal.h's
- * AlpmListGuard) that can't be derived from a C signature alone, so this
- * tool's job stops at "here's what's new, go take a look."
+ * wrapped function in src/core/koffi/ required a human call about handle
+ * serialization and alpm_list_t ownership (see src/core/koffi/marshal.ts's
+ * freeListSpineOnly/freeListSpineAndPayload) that can't be derived from a C
+ * signature alone, so this tool's job stops at "here's what's new, go take
+ * a look."
  *
  * Usage:
  *   npm run check-alpm-coverage                  # report
@@ -29,7 +30,7 @@ function sh(cmd: string, args: string[]): string {
   return execFileSync(cmd, args, { encoding: "utf8" }).trim();
 }
 
-/** Same header binding.gyp actually compiles against - pkg-config's -I if it names one, else the default this is an Arch-only tool relies on. */
+/** pkg-config's -I if it names one, else the default this Arch-only tool relies on. */
 function findHeaderPath(): string {
   try {
     const cflags = sh("pkg-config", ["--cflags", "libalpm"]);
@@ -66,7 +67,7 @@ function extractFunctionNames(headerSource: string): Set<string> {
 
 function extractWrappedFunctions(): Set<string> {
   const names = new Set<string>();
-  for (const file of globSync(join(REPO_ROOT, "native/src/*.cc"))) {
+  for (const file of globSync(join(REPO_ROOT, "src/core/koffi/*.ts"))) {
     const source = readFileSync(file, "utf8");
     for (const m of source.matchAll(/\balpm_[a-z0-9_]+(?=\s*\()/g)) {
       names.add(m[0]);
@@ -132,7 +133,7 @@ function main(): void {
   console.log(`Header: ${headerPath}`);
   console.log(`libalpm version: ${libalpmVersion}`);
   console.log(`Functions found in header: ${currentFunctions.size}`);
-  console.log(`Wrapped by native/src/*.cc: ${wrappedFunctions.size}`);
+  console.log(`Wrapped by src/core/koffi/*.ts: ${wrappedFunctions.size}`);
 
   if (updateBaseline) {
     const baseline: Baseline = { libalpmVersion, functions: [...currentFunctions].sort() };
@@ -159,8 +160,9 @@ function main(): void {
   console.log(
     "\nThis is a report, not an action list: most of the above is deliberately out of scope\n" +
       "(transactions, callbacks, write operations) for this read-only tool. Review, then\n" +
-      "wire up anything worth adding by hand in native/src/ - see marshal.h's AlpmListGuard\n" +
-      "and workers.h's HandleWorker for the patterns to follow.",
+      "wire up anything worth adding by hand in src/core/koffi/ - see marshal.ts's\n" +
+      "freeListSpineOnly/freeListSpineAndPayload and backend.ts's KoffiBackend.run() for\n" +
+      "the patterns to follow.",
   );
 }
 

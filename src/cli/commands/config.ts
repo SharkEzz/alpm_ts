@@ -7,17 +7,17 @@ import { bold } from "../render/color.ts";
 export function registerConfigCommand(program: Command): void {
   program
     .command("config")
-    .description("show the effective configuration (parsed pacman.conf merged with native handle state)")
+    .description("show the effective configuration (parsed pacman.conf merged with libalpm handle state)")
     .action(async function (this: Command) {
       const globalOpts = this.optsWithGlobals<GlobalOptions>();
       await using alpm = await openAlpm(globalOpts);
 
-      const native = await alpm.options();
+      const handleOptions = await alpm.options();
       const effective = {
-        root: native.root,
-        dbpath: native.dbpath,
-        architectures: native.architectures,
-        cachedirs: native.cachedirs.length > 0 ? native.cachedirs : alpm.config.options.cacheDirs,
+        root: handleOptions.root,
+        dbpath: handleOptions.dbpath,
+        architectures: handleOptions.architectures,
+        cachedirs: handleOptions.cachedirs.length > 0 ? handleOptions.cachedirs : alpm.config.options.cacheDirs,
         hookDirs: alpm.config.options.hookDirs,
         gpgDir: alpm.config.options.gpgDir,
         logFile: alpm.config.options.logFile,

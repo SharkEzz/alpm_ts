@@ -9,24 +9,19 @@
     "alpm": "src/cli/index.ts"
   },
   "files": [
-    "src",
-    "native/binding.gyp",
-    "native/src"
+    "src"
   ],
   "engines": {
     "node": ">=23.6.0"
   },
   "scripts": {
-    "install": "node-gyp rebuild --directory=native",
     "typecheck": "tsc",
-    "test": "node --test test/core/*.test.ts test/native/*.test.ts test/smoke.test.ts",
-    "check-alpm-coverage": "node scripts/check-alpm-coverage.ts",
-    "clean": "rm -rf native/build"
+    "test": "node --test test/core/*.test.ts test/koffi/*.test.ts test/smoke.test.ts",
+    "check-alpm-coverage": "node scripts/check-alpm-coverage.ts"
   },
   "dependencies": {
     "commander": "^15.0.0",
-    "node-addon-api": "^8.9.2",
-    "node-gyp": "^13.0.2"
+    "koffi": "^3.1.6"
   },
   "devDependencies": {
     "@types/node": "^26.4.0",

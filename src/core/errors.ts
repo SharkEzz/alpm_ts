@@ -81,7 +81,7 @@ export class AlpmError extends Error {
   }
 }
 
-/** True if `err` is a rejection carrying a native alpm_errno_t (see workers.h's MakeAlpmError). */
+/** True if `err` is a rejection carrying a real alpm_errno_t (see src/core/koffi/backend.ts's makeAlpmError). */
 export function isNativeAlpmError(err: unknown): boolean {
   return err instanceof Error && typeof (err as { code?: unknown }).code === "number";
 }

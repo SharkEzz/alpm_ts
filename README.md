@@ -3,14 +3,15 @@
 **A TypeScript CLI that queries the Arch package database straight through libalpm.**
 
 No `pacman` output-scraping, no root, no writes. `alpm-ts` talks to the same
-C library pacman itself is built on (`libalpm`), via a small native addon,
-and gives you structured, scriptable, `--json`-able access to the same data
-`pacman -Q`/`-Ss`/`-Qi`/etc. show you.
+C library pacman itself is built on (`libalpm`), via [koffi](https://koffi.dev)
+FFI bindings straight into `libalpm.so`, and gives you structured,
+scriptable, `--json`-able access to the same data `pacman -Q`/`-Ss`/`-Qi`/etc.
+show you.
 
 ## Table of contents
 
 - [Requirements](#requirements)
-- [Building from source](#building-from-source)
+- [Install and run](#install-and-run)
 - [Usage](#usage)
   - [Commands](#commands)
   - [Global options](#global-options)
@@ -26,73 +27,32 @@ and gives you structured, scriptable, `--json`-able access to the same data
 | Requirement | Why |
 |---|---|
 | Arch Linux (or an Arch derivative) | `pacman`/`libalpm` need to actually be installed |
-| `libalpm.so` + headers (`alpm.h`, `alpm_list.h`) | Usually already present alongside `pacman`; some distros split them into a `libalpm-dev`/`pacman-libalpm`-style package |
-| `pkg-config` | `binding.gyp` reads libalpm's cflags/libs/version from it |
-| A C++17 toolchain (gcc/g++ or clang) + `make` | Builds the native addon — there is no prebuilt binary |
-| Node.js **>= 23.6** + npm | The CLI runs `.ts` sources directly via Node's native type-stripping — no compile step |
+| `libalpm.so` | koffi loads it directly at runtime (`dlopen`) — no headers needed. `alpm.h` is only used by the optional `npm run check-alpm-coverage` maintenance script, not at runtime |
+| Node.js **>= 23.6** + npm | koffi ships a prebuilt binary per platform, so `npm install` needs no compiler. The CLI also runs `.ts` sources directly via Node's native type-stripping — no compile step anywhere |
 
-## Building from source
+## Install and run
 
-There are no prebuilt binaries for the native addon — it's compiled from
-source, on your machine, against whatever `libalpm` you actually have
-installed. That's deliberate: libalpm makes no ABI promise and bumps its
-soname roughly every pacman minor release, so a binary built elsewhere could
-silently be wrong for your system. The target is Arch, where a C++ toolchain
-is a reasonable thing to assume.
-
-1. **Install the toolchain**, if you don't already have one:
-
-   ```bash
-   sudo pacman -S --needed base-devel pkgconf nodejs npm
-   ```
-
-2. **From the project directory, install dependencies:**
-
-   ```bash
-   npm install
-   ```
-
-   `npm install`'s `install` script runs `node-gyp rebuild --directory=native`,
-   which:
-   - asks `pkg-config` for libalpm's `--cflags`, `--libs`, and `--modversion`
-   - compiles `native/src/*.cc` against `#include <alpm.h>` with C++17
-   - links the result into `native/build/Release/alpm.node`
-
-3. **Verify the build** — this should print your installed libalpm version
-   (matches `pacman --version`):
-
-   ```bash
-   node -e "console.log(require('./native/build/Release/alpm.node').version())"
-   ```
-
-4. **Run it:**
-
-   ```bash
-   ./src/cli/index.ts repos
-   ```
-
-   No separate compile step for the TypeScript — Node runs `.ts` files
-   directly (see [Architecture](#architecture)).
-
-### Rebuilding after a pacman/libalpm upgrade — automatic
-
-The addon checks the compiled-against libalpm major version against the
-runtime one every time it loads. If they differ (a soname bump) — or the
-addon simply hasn't been built yet — any `alpm` command self-heals: it
-prints a one-line notice to stderr, rebuilds via `node-gyp`, and re-runs
-itself so the original command still completes:
-
-```
-alpm-ts: libalpm changed (built against 16.0.1, now 17.0.0) - rebuilding native addon...
-<build output>
-<your command's normal output>
+```bash
+npm install
+./src/cli/index.ts repos
 ```
 
-This costs one slightly slower run right after an upgrade; every run after
-that is unaffected. Set `ALPM_TS_NO_AUTO_REBUILD=1` to disable it and get
-the old fail-with-a-message behavior instead (useful in CI, sandboxes
-without a C++ toolchain, or a read-only filesystem) — you'd then run
-`npm rebuild alpm-ts` yourself.
+No compiler, no build step — `npm install` just pulls dependencies (koffi's
+own native glue ships prebuilt), and Node runs the `.ts` sources directly
+(see [Architecture](#architecture)).
+
+### libalpm version drift
+
+libalpm makes no ABI promise and bumps its soname roughly every pacman minor
+release. Since the koffi bindings only ever touch `alpm_handle_t`/`alpm_db_t`/
+`alpm_pkg_t` as opaque pointers through accessor functions (never by reading
+struct fields directly), a soname bump can't silently corrupt anything the
+way a stale compiled struct-layout assumption could — there's simply no
+compiled artifact to go stale, since `libalpm.so` is loaded at runtime every
+time. As a heads-up rather than a hard requirement, `src/core/koffi/ffi.ts`
+checks the runtime `alpm_version()` against the major version this binding
+was written against, and prints a one-line stderr notice (once per process)
+if they differ — informational only, not a failure.
 
 ## Usage
 
@@ -109,7 +69,7 @@ without a C++ toolchain, or a read-only filesystem) — you'd then run
 | `outdated` | Installed packages with a newer version in a registered sync repo |
 | `groups [name]` | List package groups, or the members of one. `--repo <name>` |
 | `repos` | List registered sync repos, in resolution priority order |
-| `config` | Show the effective configuration (parsed `pacman.conf` merged with native handle state) |
+| `config` | Show the effective configuration (parsed `pacman.conf` merged with libalpm handle state) |
 
 ```bash
 ./src/cli/index.ts repos
@@ -160,8 +120,8 @@ src/cli/          commander subcommands, table + --json renderers
      |  calls
 src/core/         Alpm class, pacman.conf parser, domain types
      |  Backend interface
-native/           C++ N-API addon: mutex-guarded AsyncWorkers over libalpm
-     |  -lalpm
+src/core/koffi/   koffi FFI bindings over libalpm - no build step
+     |  dlopen
 libalpm.so
 ```
 
@@ -169,7 +129,7 @@ A detail worth knowing if you're reading the source: **libalpm does not
 parse `pacman.conf`** — that's a pacman-frontend concern, not the library's.
 `src/core/config.ts` is a from-scratch parser (including `Include =` with
 glob expansion), and `src/core/alpm.ts` registers each sync repo by hand
-against the native handle.
+against the libalpm handle.
 
 ## Development
 
@@ -186,8 +146,8 @@ assertions independent of the host's package state.
 
 ### Maintenance: tracking libalpm's API surface
 
-libalpm exports far more than this read-only tool wraps (~225 functions vs.
-46 today — the rest is transactions, callbacks, and write operations this
+libalpm exports far more than this read-only tool wraps (207 functions vs.
+49 today — the rest is transactions, callbacks, and write operations this
 CLI deliberately doesn't do). After a pacman upgrade that bumps libalpm's
 minor/patch version enough to introduce new functions, run:
 
@@ -196,14 +156,15 @@ npm run check-alpm-coverage
 ```
 
 It diffs the installed `alpm.h` against a checked-in baseline
-(`scripts/alpm-coverage-baseline.json`) and `native/src/*.cc`'s actual
+(`scripts/alpm-coverage-baseline.json`) and `src/core/koffi/*.ts`'s actual
 usage, and prints what's genuinely new since the baseline was last taken,
 separately from the (much longer, mostly-intentionally-skipped) full
 unwrapped list. **It reports, it doesn't generate anything** — wiring up a
-new libalpm call correctly means a human deciding its mutex/thread-safety
-story and `alpm_list_t` ownership (`alpm_list_free` vs. `FREELIST`, see
-`native/src/marshal.h`'s `AlpmListGuard`), which can't be inferred from a C
-signature. After reviewing a diff, run
+new libalpm call correctly means a human deciding its handle-serialization
+story and `alpm_list_t` ownership (`alpm_list_free` vs. free-each-payload-
+then-`alpm_list_free`, see `src/core/koffi/marshal.ts`'s
+`freeListSpineOnly`/`freeListSpineAndPayload`), which can't be inferred from
+a C signature. After reviewing a diff, run
 `npm run check-alpm-coverage -- --update-baseline` to reset it.
 
 ## Roadmap / out of scope
@@ -211,7 +172,7 @@ signature. After reviewing a diff, run
 Transactions, package installation/removal, `alpm_db_update` (syncing repo
 databases), and AUR support are deliberately left out of this read-only
 tool — the architecture (a `Backend` interface between the CLI/domain layer
-and the native addon) is shaped so a privileged helper process could add
+and the koffi backend) is shaped so a privileged helper process could add
 them later without reworking the read-only query layers.
 
 ## License

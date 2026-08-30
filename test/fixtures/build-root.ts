@@ -20,7 +20,7 @@ export interface FixturePackageSpec {
 }
 
 // Ten packages with deliberately known relationships, so every assertion in
-// test/native/fixture-queries.test.ts is exact rather than a loose bound:
+// test/koffi/fixture-queries.test.ts is exact rather than a loose bound:
 //  - app -(depends)-> libfoo, libbar; -(optdepends)-> libbaz
 //  - libfoo -(depends)-> libbar; provides foo-provider
 //  - libbar: required by both app and libfoo

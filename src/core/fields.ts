@@ -1,6 +1,7 @@
-// Mirrors native/src/marshal.h's Fields namespace exactly - kept in sync by
-// hand since it's a small, stable bit layout shared across the N-API
-// boundary as plain numbers (no shared header to generate this from).
+// Bitmask controlling which package fields getPackage/listPackages/search
+// populate. src/core/koffi/marshal.ts's marshalPackage imports these
+// constants directly (single source of truth, not a duplicated layout to
+// keep in sync by hand).
 export const FIELD_NAME = 1 << 0;
 export const FIELD_VERSION = 1 << 1;
 export const FIELD_DB = 1 << 2;
